@@ -13,7 +13,7 @@ chmod +x deploy.sh
 sudo ./deploy.sh
 ```
 
-**Le script est interactif** - il vous demandera confirmation avant chaque étape importante.
+**Le script est entièrement automatisé** - il configurera automatiquement le domaine vote.super-csn.ca et l'email simon@super-csn.ca pour SSL.
 
 ---
 
