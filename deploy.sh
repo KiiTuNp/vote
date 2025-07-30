@@ -52,27 +52,12 @@ confirm() {
     done
 }
 
-# Configuration du domaine
+# Configuration du domaine (automatique pour vote.super-csn.ca)
 configure_domain() {
     log_step "🌐 Configuration du domaine..."
     
-    echo ""
-    echo -e "${YELLOW}Configuration du domaine:${NC}"
-    echo "Entrez le domaine où sera accessible l'application"
-    echo -e "${BLUE}Exemples:${NC} vote.monsite.com, 192.168.1.100, mon-serveur.local"
-    echo ""
-    
-    while true; do
-        read -p "Domaine ou IP (défaut: $DEFAULT_DOMAIN): " input_domain
-        DOMAIN=${input_domain:-$DEFAULT_DOMAIN}
-        
-        echo ""
-        echo -e "${BLUE}Domaine configuré:${NC} $DOMAIN"
-        
-        if confirm "Confirmer ce domaine?"; then
-            break
-        fi
-    done
+    # Utiliser le domaine par défaut directement
+    DOMAIN="$DEFAULT_DOMAIN"
     
     log_success "✅ Domaine configuré: $DOMAIN"
 }
