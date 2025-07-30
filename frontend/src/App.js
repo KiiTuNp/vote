@@ -695,25 +695,29 @@ function App() {
     const websocket = new WebSocket(wsUrl);
     
     websocket.onopen = () => {
-      console.log("WebSocket connected");
+      console.log("WebSocket connected to:", wsUrl);
       setWs(websocket);
     };
     
     websocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("WebSocket message:", data);
+      console.log("WebSocket message received:", data);
       
       // Handle real-time updates based on message type
       if (data.type === "participant_joined" || data.type === "participant_approved") {
-        // Refresh participant list for organizer
-        if (currentView === "organizer") {
-          window.location.reload(); // Simple refresh for now
-        }
+        console.log("Participant update received, refreshing organizer view");
+        // Force refresh for organizer view
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
       
       if (data.type === "poll_started" || data.type === "poll_closed" || data.type === "vote_submitted") {
-        // Refresh polls for both organizer and participants
-        window.location.reload(); // Simple refresh for now
+        console.log("Poll update received, refreshing view");
+        // Force refresh for poll updates
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     };
     
