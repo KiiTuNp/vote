@@ -240,8 +240,24 @@ setup_project() {
     git clone --depth 1 "$REPO_URL" "$APP_DIR" &>>"$LOG_FILE"
     cd "$APP_DIR"
     
+    # Mise à jour des variables d'environnement
+    log_info "Configuration des variables d'environnement..."
+    
+    # Backend .env (MongoDB connecté via Docker)
+    cat > backend/.env << EOF
+MONGO_URL=mongodb://mongodb:27017
+DB_NAME=vote_secret_production
+CORS_ORIGINS=https://$DOMAIN,http://$DOMAIN
+EOF
+
+    # Frontend .env (utilisation du domaine configuré)
+    cat > frontend/.env << EOF
+REACT_APP_BACKEND_URL=https://$DOMAIN
+WDS_SOCKET_PORT=443
+EOF
+
     # Dockerfile frontend optimisé (Node.js 22 LTS)
-    cat > frontend/Dockerfile << EOF
+    cat > Dockerfile.frontend << EOF
 # Build stage - Node.js 22 LTS (Juillet 2025)
 FROM node:${NODE_VERSION}-alpine as builder
 
