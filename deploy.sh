@@ -1,18 +1,23 @@
 #!/bin/bash
 
 # ========================================================================
-# VOTE SECRET - DÉPLOIEMENT DOCKER ROBUSTE
-# Script unique et définitif pour installer Vote Secret avec Docker
-# Fonctionne sur Ubuntu 18.04, 20.04, 22.04, 24.04+
+# VOTE SECRET - DÉPLOIEMENT DOCKER OPTIMISÉ (2025)
+# Script unique avec les versions les plus stables et récentes
+# MongoDB 8.0 LTS, Node.js 22 LTS, Docker Compose 2.39.1
 # ========================================================================
 
 set -e
 
-# Configuration
+# Configuration avec versions 2025
 DOMAIN="vote.super-csn.ca"
 REPO_URL="https://github.com/KiiTuNp/vote.git"
 APP_DIR="/var/www/vote-secret"
 LOG_FILE="/tmp/vote-secret-deploy.log"
+
+# Versions les plus stables (Juillet 2025)
+DOCKER_COMPOSE_VERSION="v2.39.1"
+MONGODB_VERSION="8.0.12"
+NODE_VERSION="22"
 
 # Couleurs
 RED='\033[0;31m'
@@ -22,265 +27,309 @@ BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 NC='\033[0m'
 
-# Fonctions de logging
+# Fonctions de logging optimisées
 log_info() { echo -e "${BLUE}[INFO]${NC} $1" | tee -a "$LOG_FILE"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1" | tee -a "$LOG_FILE"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1" | tee -a "$LOG_FILE"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1" | tee -a "$LOG_FILE"; }
 log_step() { echo -e "${PURPLE}[STEP]${NC} $1" | tee -a "$LOG_FILE"; }
 
-# Fonction pour demander confirmation
+# Fonction de confirmation optimisée
 confirm() {
     local message="$1"
+    local default="${2:-y}"
+    local prompt="$message (Y/n): "
+    [[ "$default" == "n" ]] && prompt="$message (y/N): "
+    
     while true; do
-        read -p "$message (y/n): " yn
-        case $yn in
-            [Yy]* ) return 0;;
-            [Nn]* ) return 1;;
-            * ) echo "Répondez par y (oui) ou n (non).";;
+        read -p "$prompt" -r response
+        response=${response:-$default}
+        case ${response,,} in
+            [yy]|yes) return 0 ;;
+            [nn]|no) return 1 ;;
+            *) echo "Répondez par y (oui) ou n (non)." ;;
         esac
     done
 }
 
-# Gestion d'erreur avec nettoyage
+# Gestion d'erreur optimisée
 cleanup_on_error() {
-    log_error "Échec du déploiement. Nettoyage en cours..."
+    log_error "Échec du déploiement. Nettoyage automatique..."
     cd /
-    docker-compose -f "$APP_DIR/docker-compose.yml" down 2>/dev/null || true
+    docker-compose -f "$APP_DIR/docker-compose.yml" down --remove-orphans 2>/dev/null || true
     systemctl stop nginx 2>/dev/null || true
-    log_error "Consultez les logs: $LOG_FILE"
+    log_error "Logs détaillés: $LOG_FILE"
+    echo ""
+    echo -e "${YELLOW}💡 Commandes de diagnostic:${NC}"
+    echo "   sudo docker ps -a"
+    echo "   sudo systemctl status nginx"
+    echo "   tail -f $LOG_FILE"
     exit 1
 }
 
 trap cleanup_on_error ERR
 
-# Vérifications préliminaires
+# Vérifications système optimisées
 check_system() {
-    log_step "🔍 Vérification du système..."
+    log_step "🔍 Vérification du système (Ubuntu/Debian)..."
     
     # Root check
     if [[ $EUID -ne 0 ]]; then
         log_error "Ce script doit être exécuté en tant que root"
-        echo "Utilisez: sudo $0"
+        echo "Commande: sudo $0"
         exit 1
     fi
     
-    # Internet check
-    if ! ping -c 1 8.8.8.8 &>/dev/null; then
+    # OS check
+    if ! grep -q "ubuntu\|debian" /etc/os-release 2>/dev/null; then
+        log_warning "OS non testé - Ce script est optimisé pour Ubuntu/Debian"
+    fi
+    
+    # Internet check (plus rapide)
+    if ! timeout 5 ping -c 1 1.1.1.1 &>/dev/null; then
         log_error "Pas de connexion internet"
         exit 1
     fi
     
-    # Disk space check (minimum 3GB)
+    # Disk space check (minimum 4GB pour MongoDB 8.0)
     local available=$(df / | awk 'NR==2 {print $4}')
-    if [ "$available" -lt 3000000 ]; then
-        log_error "Espace disque insuffisant (minimum 3GB requis)"
+    if [ "$available" -lt 4000000 ]; then
+        log_error "Espace disque insuffisant (minimum 4GB requis pour MongoDB 8.0)"
         exit 1
     fi
     
-    log_success "✅ Système vérifié"
+    # Architecture check
+    if [[ $(uname -m) != "x86_64" ]]; then
+        log_warning "Architecture non testée - Optimisé pour x86_64"
+    fi
+    
+    log_success "✅ Système compatible"
 }
 
-# Nettoyage intelligent
+# Nettoyage intelligent et rapide
 cleanup_previous() {
     log_step "🧹 Nettoyage des installations précédentes..."
     
-    # Arrêter les services existants
-    systemctl stop nginx 2>/dev/null || true
+    # Arrêt rapide des services
+    timeout 30 systemctl stop nginx 2>/dev/null || true
+    
     if [ -f "$APP_DIR/docker-compose.yml" ]; then
         cd "$APP_DIR"
-        docker-compose down 2>/dev/null || true
+        timeout 30 docker-compose down --remove-orphans 2>/dev/null || true
         cd /
     fi
     
-    # Nettoyer les anciens conteneurs Vote Secret
-    docker ps -a --filter "name=vote-" -q | xargs -r docker rm -f 2>/dev/null || true
+    # Nettoyage Docker optimisé
+    docker container prune -f &>/dev/null || true
+    docker image prune -f &>/dev/null || true
     
-    # Nettoyer les images inutilisées
-    docker system prune -f &>/dev/null || true
-    
-    # Supprimer l'ancien répertoire
+    # Suppression propre
     rm -rf "$APP_DIR"
-    
-    # Nettoyer les configurations nginx
-    rm -f /etc/nginx/sites-enabled/vote-secret
-    rm -f /etc/nginx/sites-available/vote-secret
+    rm -f /etc/nginx/sites-{enabled,available}/vote-secret
     
     log_success "✅ Nettoyage terminé"
 }
 
-# Installation des dépendances système
+# Installation système optimisée
 install_system() {
     log_step "📦 Installation des dépendances système..."
     
-    # Mise à jour des paquets
-    apt update &>>"$LOG_FILE"
+    # Update en parallèle
+    apt update &>>"$LOG_FILE" &
+    local apt_pid=$!
     
-    # Installation des paquets essentiels
-    DEBIAN_FRONTEND=noninteractive apt install -y \
+    # Attendre la fin du update
+    wait $apt_pid
+    
+    # Installation en mode non-interactif optimisé
+    DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends \
         curl \
         wget \
         git \
-        nginx \
+        nginx-light \
         ufw \
         ca-certificates \
         gnupg \
         lsb-release \
         snapd \
+        htop \
         &>>"$LOG_FILE"
     
     log_success "✅ Dépendances système installées"
 }
 
-# Installation de Docker
+# Installation Docker optimisée
 install_docker() {
-    log_step "🐳 Installation de Docker..."
+    log_step "🐳 Installation Docker (dernière version stable)..."
     
-    if command -v docker &>/dev/null; then
+    if command -v docker &>/dev/null && docker --version | grep -q "Docker version"; then
         log_info "Docker déjà installé: $(docker --version)"
     else
-        # Installation Docker officielle
+        # Installation Docker officielle (méthode la plus fiable)
         curl -fsSL https://get.docker.com -o get-docker.sh &>>"$LOG_FILE"
         sh get-docker.sh &>>"$LOG_FILE"
         rm get-docker.sh
         
-        # Démarrer Docker
+        # Configuration optimisée Docker
         systemctl start docker
         systemctl enable docker
+        
+        # Optimisation Docker daemon
+        cat > /etc/docker/daemon.json << 'EOF'
+{
+    "log-driver": "json-file",
+    "log-opts": {
+        "max-size": "10m",
+        "max-file": "3"
+    },
+    "storage-driver": "overlay2"
+}
+EOF
+        systemctl restart docker
     fi
     
-    # Installation Docker Compose
+    # Installation Docker Compose (dernière version 2025)
     if ! command -v docker-compose &>/dev/null; then
-        COMPOSE_VERSION="v2.21.0"
-        curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
+        log_info "Installation Docker Compose $DOCKER_COMPOSE_VERSION..."
+        curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
             -o /usr/local/bin/docker-compose &>>"$LOG_FILE"
         chmod +x /usr/local/bin/docker-compose
         ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
     fi
     
-    # Test Docker
-    if ! docker run --rm hello-world &>>"$LOG_FILE"; then
+    # Test rapide Docker
+    if ! timeout 30 docker run --rm hello-world &>>"$LOG_FILE"; then
         log_error "Docker ne fonctionne pas correctement"
         exit 1
     fi
     
-    log_success "✅ Docker installé et fonctionnel"
+    log_success "✅ Docker installé: $(docker --version | cut -d',' -f1)"
+    log_success "✅ Docker Compose: $(docker-compose --version)"
 }
 
-# Clone et préparation du projet
+# Configuration projet optimisée
 setup_project() {
-    log_step "📥 Téléchargement du projet..."
+    log_step "📥 Configuration du projet (versions 2025)..."
     
-    # Clone du repository
-    git clone "$REPO_URL" "$APP_DIR" &>>"$LOG_FILE"
+    # Clone rapide
+    git clone --depth 1 "$REPO_URL" "$APP_DIR" &>>"$LOG_FILE"
     cd "$APP_DIR"
     
-    # Création du Dockerfile pour le frontend (évite les problèmes npm)
-    cat > frontend/Dockerfile << 'EOF'
-# Build stage - utilise Node.js 18 LTS pour la compatibilité
-FROM node:18-alpine as builder
+    # Dockerfile frontend optimisé (Node.js 22 LTS)
+    cat > frontend/Dockerfile << EOF
+# Build stage - Node.js 22 LTS (Juillet 2025)
+FROM node:${NODE_VERSION}-alpine as builder
 
-# Variables d'environnement pour le build
+# Variables d'environnement optimisées
 ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=false
-ENV NODE_OPTIONS=--max_old_space_size=4096
+ENV NODE_OPTIONS="--max_old_space_size=4096"
 ENV DISABLE_HOT_RELOAD=true
+ENV CI=true
 
-# Créer le répertoire de travail
 WORKDIR /app
 
-# Installer les dépendances système nécessaires pour certains packages npm
-RUN apk add --no-cache python3 make g++ git
+# Installation dépendances système nécessaires (optimisé)
+RUN apk add --no-cache --virtual .build-deps \
+    python3 \
+    make \
+    g++ \
+    git
 
-# Copier les fichiers de configuration npm
-COPY package.json yarn.lock* package-lock.json* ./
+# Copie des fichiers de configuration
+COPY package*.json yarn.lock* ./
 
-# Nettoyer le cache npm et installer les dépendances
-RUN npm cache clean --force || true
-RUN rm -rf node_modules || true
+# Installation optimisée des dépendances
+RUN npm ci --only=production --no-audit --no-fund --legacy-peer-deps
 
-# Installer les dépendances avec --legacy-peer-deps pour résoudre les conflits
-RUN npm install --legacy-peer-deps --production=false --no-audit --no-fund
-
-# Copier le code source
+# Copie du code source
 COPY . .
 
-# Variables d'environnement pour l'application
-ENV REACT_APP_BACKEND_URL=https://vote.super-csn.ca
+# Variables pour l'application
+ENV REACT_APP_BACKEND_URL=https://${DOMAIN}
 
-# Build de production avec craco
+# Build optimisé
 RUN npm run build
 
-# Vérifier que le build a réussi
-RUN test -d build && test -f build/index.html || (echo "Build failed - missing build directory or index.html" && exit 1)
+# Vérification du build
+RUN test -d build && test -f build/index.html || exit 1
 
-# Production stage - utilise nginx:alpine
-FROM nginx:alpine
+# Production stage - Nginx optimisé
+FROM nginx:1.27-alpine
 
-# Copier les fichiers buildés
+# Copie des fichiers buildés
 COPY --from=builder /app/build /usr/share/nginx/html
 
-# Configuration Nginx pour React Router (SPA)
+# Configuration Nginx optimisée pour React
 RUN echo 'server { \
     listen 80; \
     server_name localhost; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    \
+    # Gestion SPA \
     location / { \
-        root /usr/share/nginx/html; \
-        index index.html index.htm; \
-        try_files $uri $uri/ /index.html; \
+        try_files \$uri \$uri/ /index.html; \
     } \
-    location /static/ { \
-        root /usr/share/nginx/html; \
+    \
+    # Cache optimisé pour les assets \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ { \
         expires 1y; \
         add_header Cache-Control "public, immutable"; \
+        access_log off; \
     } \
+    \
+    # Security headers \
+    add_header X-Frame-Options DENY always; \
+    add_header X-Content-Type-Options nosniff always; \
+    add_header X-XSS-Protection "1; mode=block" always; \
 }' > /etc/nginx/conf.d/default.conf
 
-# Exposer le port 80
 EXPOSE 80
-
-# Commande par défaut
 CMD ["nginx", "-g", "daemon off;"]
 EOF
 
     # Dockerfile backend optimisé
     cat > backend/Dockerfile << 'EOF'
-FROM python:3.9-slim
+# Python 3.12 (dernière stable 2025)
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-# Installation des dépendances système
-RUN apt-get update && apt-get install -y \
+# Installation dépendances système optimisées
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier et installer les dépendances Python
+# Installation dépendances Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copier le code
+# Copie du code
 COPY . .
 
 EXPOSE 8001
 
-# Health check
+# Health check optimisé
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8001/api/ || exit 1
 
-# Commande de démarrage
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]
 EOF
 
-    # Docker Compose complet
-    cat > docker-compose.yml << 'EOF'
+    # Docker Compose optimisé (versions 2025)
+    cat > docker-compose.yml << EOF
 version: '3.8'
 
 services:
   mongodb:
-    image: mongo:6.0
+    image: mongodb/mongodb-community-server:${MONGODB_VERSION}
     container_name: vote-mongodb
     restart: unless-stopped
     environment:
@@ -291,10 +340,16 @@ services:
       - vote-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   backend:
     build: 
@@ -308,17 +363,23 @@ services:
     environment:
       - MONGO_URL=mongodb://mongodb:27017
       - DB_NAME=vote_secret_production
-      - CORS_ORIGINS=https://vote.super-csn.ca
+      - CORS_ORIGINS=https://${DOMAIN}
     ports:
       - "127.0.0.1:8001:8001"
     networks:
       - vote-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/api/"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   frontend:
     build:
@@ -329,9 +390,16 @@ services:
     ports:
       - "127.0.0.1:3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - vote-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
 
 volumes:
   mongodb_data:
@@ -342,7 +410,7 @@ networks:
     driver: bridge
 EOF
 
-    log_success "✅ Projet configuré avec Docker"
+    log_success "✅ Projet configuré avec les versions les plus récentes"
 }
 
 # Configuration Nginx
