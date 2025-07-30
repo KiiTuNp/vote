@@ -309,7 +309,7 @@ function App() {
           </Card>
 
           <Tabs defaultValue="participants" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="participants">
                 <Users className="w-4 h-4 mr-2" />
                 Participants ({participants.length})
@@ -320,6 +320,9 @@ function App() {
               </TabsTrigger>
               <TabsTrigger value="create-poll">
                 Créer un sondage
+              </TabsTrigger>
+              <TabsTrigger value="report">
+                Rapport Final
               </TabsTrigger>
             </TabsList>
 
