@@ -411,7 +411,11 @@ def generate_pdf_report(meeting_data, participants_data, polls_data):
     if approved_participants:
         participants_table_data = [['#', 'Nom', 'Heure de participation']]
         for i, participant in enumerate(approved_participants, 1):
-            joined_time = datetime.fromisoformat(participant['joined_at'].replace('Z', '+00:00')).strftime('%H:%M')
+            # Handle both datetime objects and ISO strings
+            if isinstance(participant['joined_at'], str):
+                joined_time = datetime.fromisoformat(participant['joined_at'].replace('Z', '+00:00')).strftime('%H:%M')
+            else:
+                joined_time = participant['joined_at'].strftime('%H:%M')
             participants_table_data.append([str(i), participant['name'], joined_time])
         
         participants_table = Table(participants_table_data, colWidths=[0.5*inch, 3*inch, 1.5*inch])
