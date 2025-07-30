@@ -521,6 +521,54 @@ function App() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="report">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Rapport Final de la Réunion
+                  </CardTitle>
+                  <CardDescription>
+                    Téléchargez le rapport PDF contenant tous les résultats. 
+                    <strong className="text-red-600"> Attention: Cette action supprimera définitivement toutes les données de la réunion.</strong>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Important</h3>
+                    <ul className="text-sm text-yellow-700 space-y-1">
+                      <li>• Le rapport PDF contiendra la liste des participants approuvés</li>
+                      <li>• Tous les résultats de sondages avec votes et pourcentages</li>
+                      <li>• Une fois téléchargé, toutes les données seront supprimées</li>
+                      <li>• Cette action est irréversible</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-blue-800 mb-2">📊 Résumé de la réunion</h3>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <p><strong>Participants approuvés:</strong> {participants.filter(p => p.approval_status === 'approved').length}</p>
+                      <p><strong>Sondages créés:</strong> {polls.length}</p>
+                      <p><strong>Sondages fermés:</strong> {polls.filter(p => p.status === 'closed').length}</p>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={downloadReport}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Télécharger le Rapport Final et Terminer la Réunion
+                  </Button>
+
+                  <p className="text-xs text-slate-500 text-center">
+                    En cliquant sur ce bouton, vous acceptez la suppression définitive de toutes les données de cette réunion
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
