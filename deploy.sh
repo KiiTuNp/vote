@@ -62,6 +62,7 @@ apt install -y \
     ca-certificates \
     gnupg \
     lsb-release \
+    bc \
     ufw
 
 # 3. Installation de Node.js 18
