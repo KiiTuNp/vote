@@ -258,7 +258,7 @@ EOF
 
     # Dockerfile frontend optimisé (Node.js 22 LTS)
     cat > Dockerfile.frontend << EOF
-# Build stage - Node.js 22 LTS (Juillet 2025)
+# Build stage - Node.js 22 LTS (2025 stable)
 FROM node:${NODE_VERSION}-alpine as builder
 
 # Variables d'environnement optimisées
@@ -271,17 +271,18 @@ ENV CI=true
 WORKDIR /app
 
 # Installation dépendances système nécessaires (optimisé)
-RUN apk add --no-cache --virtual .build-deps \
-    python3 \
-    make \
-    g++ \
+RUN apk add --no-cache --virtual .build-deps \\
+    python3 \\
+    make \\
+    g++ \\
     git
 
 # Copie des fichiers de configuration
 COPY package*.json yarn.lock* ./
 
-# Installation optimisée des dépendances
-RUN npm ci --only=production --no-audit --no-fund --legacy-peer-deps
+# Installation optimisée des dépendances avec résolution de conflits
+RUN yarn install --frozen-lockfile --production=false --network-timeout 300000 || \\
+    npm ci --legacy-peer-deps --no-audit --no-fund
 
 # Copie du code source
 COPY . .
@@ -289,8 +290,8 @@ COPY . .
 # Variables pour l'application
 ENV REACT_APP_BACKEND_URL=https://${DOMAIN}
 
-# Build optimisé
-RUN npm run build
+# Build optimisé avec gestion d'erreurs
+RUN yarn build || npm run build
 
 # Vérification du build
 RUN test -d build && test -f build/index.html || exit 1
@@ -302,28 +303,28 @@ FROM nginx:1.27-alpine
 COPY --from=builder /app/build /usr/share/nginx/html
 
 # Configuration Nginx optimisée pour React
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    # Gestion SPA \
-    location / { \
-        try_files \$uri \$uri/ /index.html; \
-    } \
-    \
-    # Cache optimisé pour les assets \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-        access_log off; \
-    } \
-    \
-    # Security headers \
-    add_header X-Frame-Options DENY always; \
-    add_header X-Content-Type-Options nosniff always; \
-    add_header X-XSS-Protection "1; mode=block" always; \
+RUN echo 'server { \\
+    listen 80; \\
+    server_name localhost; \\
+    root /usr/share/nginx/html; \\
+    index index.html; \\
+    \\
+    # Gestion SPA \\
+    location / { \\
+        try_files \$uri \$uri/ /index.html; \\
+    } \\
+    \\
+    # Cache optimisé pour les assets \\
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ { \\
+        expires 1y; \\
+        add_header Cache-Control "public, immutable"; \\
+        access_log off; \\
+    } \\
+    \\
+    # Security headers \\
+    add_header X-Frame-Options DENY always; \\
+    add_header X-Content-Type-Options nosniff always; \\
+    add_header X-XSS-Protection "1; mode=block" always; \\
 }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
@@ -331,7 +332,7 @@ CMD ["nginx", "-g", "daemon off;"]
 EOF
 
     # Dockerfile backend optimisé
-    cat > backend/Dockerfile << 'EOF'
+    cat > Dockerfile << 'EOF'
 # Python 3.12 (dernière stable 2025)
 FROM python:3.12-slim
 
