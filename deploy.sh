@@ -198,7 +198,7 @@ ENV GENERATE_SOURCEMAP=false
 ENV NODE_OPTIONS=--max_old_space_size=4096
 
 # Build de production
-RUN npm run build || yarn build
+RUN npm run build
 
 # Production stage
 FROM nginx:alpine
