@@ -1,6 +1,44 @@
 # Instructions de déploiement Vote Secret sur VPS
 
-## 🚀 Déploiement automatique
+## 🚨 Problème MongoDB libssl1.1 sur Ubuntu 22.04+
+
+Si vous rencontrez l'erreur :
+```
+mongodb-org-server : Depends: libssl1.1 (>= 1.1.1) but it is not installable
+```
+
+**Vous avez 3 solutions :**
+
+### 🔧 Solution 1 : Fix automatique (Recommandé)
+```bash
+# Télécharger et exécuter le fix
+wget https://raw.githubusercontent.com/KiiTuNp/vote/main/fix-mongodb.sh
+chmod +x fix-mongodb.sh
+sudo ./fix-mongodb.sh
+
+# Puis relancer le déploiement principal
+sudo ./deploy.sh
+```
+
+### 🐳 Solution 2 : Déploiement avec Docker (Alternative robuste)
+```bash
+# Utiliser la version Docker qui évite les problèmes de dépendances
+wget https://raw.githubusercontent.com/KiiTuNp/vote/main/deploy-docker.sh
+chmod +x deploy-docker.sh
+sudo ./deploy-docker.sh
+```
+
+### 🛠️ Solution 3 : Déploiement classique corrigé
+```bash
+# Utiliser le script de déploiement mis à jour qui gère automatiquement le problème
+wget https://raw.githubusercontent.com/KiiTuNp/vote/main/deploy.sh
+chmod +x deploy.sh
+sudo ./deploy.sh
+```
+
+---
+
+## 🚀 Déploiement automatique standard
 
 ### 1. Préparation du serveur
 
@@ -9,31 +47,63 @@ Connectez-vous à votre VPS en SSH :
 ssh root@votre-serveur
 ```
 
-### 2. Téléchargement et exécution du script de déploiement
-
+### 2. Installation automatique
 ```bash
-# Télécharger le script de déploiement
+# Télécharger le script de déploiement corrigé
 wget https://raw.githubusercontent.com/KiiTuNp/vote/main/deploy.sh
-
-# Rendre le script exécutable
 chmod +x deploy.sh
 
-# Exécuter le déploiement (en tant que root)
+# Exécuter (le script gère automatiquement Ubuntu 22.04+)
 sudo ./deploy.sh
 ```
 
-Le script va automatiquement :
-- ✅ Installer toutes les dépendances (Node.js, Python, MongoDB, Nginx)
-- ✅ Cloner votre repository
-- ✅ Configurer l'environnement
-- ✅ Installer les certificats SSL
-- ✅ Configurer le reverse proxy Nginx
-- ✅ Démarrer tous les services
+### 3. Si problème MongoDB persiste
+```bash
+# Utiliser le fix spécifique
+wget https://raw.githubusercontent.com/KiiTuNp/vote/main/fix-mongodb.sh
+chmod +x fix-mongodb.sh
+sudo ./fix-mongodb.sh
 
-### 3. Vérification du déploiement
+# Puis relancer le déploiement
+sudo ./deploy.sh
+```
 
-Après le déploiement, votre application sera accessible sur :
-**https://vote.super-csn.ca**
+---
+
+## 🐳 Déploiement avec Docker (Sans problème de dépendances)
+
+### Avantages de la version Docker :
+- ✅ Évite complètement les problèmes de dépendances MongoDB
+- ✅ Isolation complète des services
+- ✅ Facilité de mise à jour et de gestion
+- ✅ Compatible avec tous les systèmes Ubuntu/Debian
+
+### Installation Docker :
+```bash
+# Télécharger le script Docker
+wget https://raw.githubusercontent.com/KiiTuNp/vote/main/deploy-docker.sh
+chmod +x deploy-docker.sh
+
+# Exécuter le déploiement Docker
+sudo ./deploy-docker.sh
+```
+
+### Gestion avec Docker :
+```bash
+# Scripts disponibles après déploiement Docker
+sudo /var/www/vote-secret/manage-docker.sh status
+sudo /var/www/vote-secret/manage-docker.sh restart
+sudo /var/www/vote-secret/manage-docker.sh logs
+sudo /var/www/vote-secret/manage-docker.sh update
+
+# Commandes Docker natives
+cd /var/www/vote-secret
+docker compose ps
+docker compose logs -f
+docker compose restart backend
+```
+
+---
 
 ## 🔧 Scripts de gestion
 
