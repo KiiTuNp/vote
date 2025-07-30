@@ -371,7 +371,7 @@ version: '3.8'
 
 services:
   mongodb:
-    image: mongodb/mongodb-community-server:${MONGODB_VERSION}
+    image: mongo:${MONGODB_VERSION}
     container_name: vote-mongodb
     restart: unless-stopped
     environment:
@@ -405,7 +405,7 @@ services:
     environment:
       - MONGO_URL=mongodb://mongodb:27017
       - DB_NAME=vote_secret_production
-      - CORS_ORIGINS=https://${DOMAIN}
+      - CORS_ORIGINS=https://${DOMAIN},http://${DOMAIN}
     ports:
       - "127.0.0.1:8001:8001"
     networks:
@@ -426,7 +426,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: ../Dockerfile.frontend
     container_name: vote-frontend
     restart: unless-stopped
     ports:
