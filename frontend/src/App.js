@@ -10,8 +10,10 @@ import { Separator } from "./components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { CheckCircle, Clock, Users, Vote, AlertCircle, Play, Square, Download, FileText } from "lucide-react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+console.log("🔍 Environment loaded:", { BACKEND_URL, API });
 
 function App() {
   const [currentView, setCurrentView] = useState("home"); // home, create, join, organizer, participant
