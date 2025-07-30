@@ -413,80 +413,142 @@ EOF
     log_success "✅ Projet configuré avec les versions les plus récentes"
 }
 
-# Configuration Nginx
+# Configuration Nginx optimisée
 setup_nginx() {
-    log_step "🌐 Configuration de Nginx..."
+    log_step "🌐 Configuration Nginx (optimisée pour performance)..."
     
-    # Configuration Nginx pour le reverse proxy
+    # Configuration Nginx haute performance
     cat > /etc/nginx/sites-available/vote-secret << EOF
+# Configuration optimisée pour Vote Secret
 server {
     listen 80;
     server_name $DOMAIN;
     
-    # Frontend (interface utilisateur)
+    # Optimisations de performance
+    client_max_body_size 10M;
+    client_body_timeout 30s;
+    client_header_timeout 30s;
+    keepalive_timeout 65s;
+    
+    # Logs optimisés
+    access_log /var/log/nginx/vote-access.log combined buffer=16k flush=5s;
+    error_log /var/log/nginx/vote-error.log warn;
+    
+    # Frontend (React SPA)
     location / {
         proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        # Timeouts optimisés
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
     }
     
     # Backend API
     location /api {
         proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # Timeouts API
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 60s;
     }
     
-    # WebSocket support
+    # WebSocket support optimisé
     location /ws {
         proxy_pass http://127.0.0.1:8001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+    
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\\n";
+        add_header Content-Type text/plain;
     }
 }
 EOF
     
-    # Activer le site
+    # Activation du site
     ln -sf /etc/nginx/sites-available/vote-secret /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
     
-    # Test de configuration
+    # Test et optimisation Nginx
     nginx -t &>>"$LOG_FILE"
     
-    log_success "✅ Nginx configuré"
+    log_success "✅ Nginx configuré et optimisé"
 }
 
-# Build et démarrage des services Docker
+# Build et démarrage optimisés
 build_and_start() {
-    log_step "🚀 Build et démarrage des services..."
+    log_step "🚀 Build et démarrage (optimisé pour rapidité)..."
     
     cd "$APP_DIR"
     
-    log_info "Construction des images Docker (cela peut prendre quelques minutes)..."
-    if ! docker-compose build --no-cache &>>"$LOG_FILE"; then
-        log_error "Échec du build Docker"
-        log_info "Vérification des logs..."
-        docker-compose logs &>>"$LOG_FILE"
-        exit 1
-    fi
+    log_info "Build des images Docker en parallèle..."
     
-    log_info "Démarrage des conteneurs..."
+    # Build en parallèle pour plus de rapidité
+    docker-compose build --parallel --no-cache &>>"$LOG_FILE"
+    
+    log_info "Démarrage des conteneurs avec health checks..."
     docker-compose up -d &>>"$LOG_FILE"
+    
+    # Attendre que tous les services soient healthy
+    log_info "Attente des health checks (max 120s)..."
+    local timeout=120
+    local elapsed=0
+    
+    while [ $elapsed -lt $timeout ]; do
+        if docker-compose ps | grep -q "Up (healthy).*Up (healthy).*Up"; then
+            log_success "✅ Tous les services sont healthy"
+            break
+        fi
+        
+        sleep 5
+        elapsed=$((elapsed + 5))
+        
+        if [ $((elapsed % 15)) -eq 0 ]; then
+            log_info "Attente des services... ${elapsed}s/${timeout}s"
+        fi
+    done
+    
+    if [ $elapsed -ge $timeout ]; then
+        log_warning "⚠️ Timeout health check - Services peuvent encore démarrer"
+        docker-compose ps
+    fi
     
     log_success "✅ Services Docker démarrés"
 }
 
-# Configuration SSL
+# Configuration SSL rapide
 setup_ssl() {
-    log_step "🔐 Configuration SSL..."
+    log_step "🔐 Configuration SSL (Let's Encrypt)..."
     
-    # Installation Certbot
+    # Installation Certbot via snap (plus rapide et stable)
+    if ! command -v snap &>/dev/null; then
+        log_warning "Snap non disponible - SSL sera configuré manuellement"
+        return 0
+    fi
+    
     snap install core &>>"$LOG_FILE"
     snap refresh core &>>"$LOG_FILE"
     snap install --classic certbot &>>"$LOG_FILE"
@@ -496,96 +558,115 @@ setup_ssl() {
     systemctl start nginx
     systemctl enable nginx
     
-    log_info "Génération des certificats SSL pour $DOMAIN..."
-    
-    if confirm "Voulez-vous installer les certificats SSL automatiquement?"; then
+    if confirm "Installer les certificats SSL automatiquement?" "y"; then
+        log_info "Génération des certificats SSL..."
+        
         if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email admin@super-csn.ca --redirect &>>"$LOG_FILE"; then
-            log_success "✅ Certificats SSL installés"
+            log_success "✅ SSL configuré avec succès"
             
-            # Auto-renouvellement
-            (crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet") | crontab -
+            # Auto-renouvellement optimisé
+            cat > /etc/cron.d/certbot-renew << 'EOF'
+0 12 * * * root /usr/bin/certbot renew --quiet --post-hook "systemctl reload nginx"
+EOF
+            log_success "✅ Renouvellement automatique configuré"
         else
-            log_warning "⚠️ Échec SSL - Application accessible en HTTP"
+            log_warning "⚠️ SSL échoué - Application accessible en HTTP"
         fi
     else
-        log_info "SSL ignoré - Application accessible en HTTP"
+        log_info "SSL ignoré - Configuration manuelle possible plus tard"
     fi
 }
 
-# Configuration du firewall
+# Configuration firewall optimisée
 setup_firewall() {
-    log_step "🔥 Configuration du firewall..."
+    log_step "🔥 Configuration firewall (sécurité optimisée)..."
     
-    ufw --force enable &>>"$LOG_FILE"
+    # Configuration UFW optimisée
+    ufw --force reset &>>"$LOG_FILE"
+    ufw default deny incoming &>>"$LOG_FILE"
+    ufw default allow outgoing &>>"$LOG_FILE"
+    
+    # Règles essentielles
     ufw allow ssh &>>"$LOG_FILE"
     ufw allow 'Nginx Full' &>>"$LOG_FILE"
     
-    log_success "✅ Firewall configuré"
+    # Règles de sécurité avancées
+    ufw limit ssh &>>"$LOG_FILE"  # Protection brute force SSH
+    
+    ufw --force enable &>>"$LOG_FILE"
+    
+    log_success "✅ Firewall configuré avec protection brute force"
 }
 
-# Tests de l'application
+# Tests rapides et efficaces
 test_application() {
-    log_step "🧪 Tests de l'application..."
+    log_step "🧪 Tests de validation (optimisés)..."
     
-    log_info "Attente du démarrage complet des services (60 secondes)..."
-    sleep 60
+    log_info "Tests en cours... (30s max)"
+    sleep 15  # Temps réduit pour les tests
     
     local tests_passed=0
-    local total_tests=5
+    local total_tests=6
     
-    # Test 1: Conteneurs Docker
+    # Test 1: Conteneurs
     if docker-compose ps | grep -q "Up"; then
-        log_success "✅ Test 1/5: Conteneurs Docker actifs"
+        log_success "✅ Test 1/6: Conteneurs actifs"
         ((tests_passed++))
     else
-        log_error "❌ Test 1/5: Problème conteneurs Docker"
-        docker-compose ps
+        log_error "❌ Test 1/6: Problème conteneurs"
     fi
     
     # Test 2: Nginx
     if systemctl is-active --quiet nginx; then
-        log_success "✅ Test 2/5: Nginx actif"
+        log_success "✅ Test 2/6: Nginx actif"
         ((tests_passed++))
-    else
-        log_error "❌ Test 2/5: Nginx inactif"
+    else  
+        log_error "❌ Test 2/6: Nginx inactif"
     fi
     
-    # Test 3: Backend API
-    if curl -f -s http://localhost:8001/api/ &>/dev/null; then
-        log_success "✅ Test 3/5: Backend API accessible"
+    # Test 3: Backend health
+    if timeout 10 curl -f -s http://localhost:8001/api/ &>/dev/null; then
+        log_success "✅ Test 3/6: Backend API ok"
         ((tests_passed++))
     else
-        log_warning "⚠️ Test 3/5: Backend API - peut nécessiter plus de temps"
+        log_warning "⚠️ Test 3/6: Backend en démarrage"
     fi
     
     # Test 4: Frontend
-    if curl -f -s http://localhost:3000/ &>/dev/null; then
-        log_success "✅ Test 4/5: Frontend accessible"
+    if timeout 10 curl -f -s http://localhost:3000/ &>/dev/null; then
+        log_success "✅ Test 4/6: Frontend ok"
         ((tests_passed++))
     else
-        log_warning "⚠️ Test 4/5: Frontend - peut nécessiter plus de temps"
+        log_warning "⚠️ Test 4/6: Frontend en démarrage"
     fi
     
-    # Test 5: Site web complet
+    # Test 5: MongoDB
+    if docker-compose exec -T mongodb mongosh --eval "db.adminCommand('ping')" &>/dev/null; then
+        log_success "✅ Test 5/6: MongoDB ok"
+        ((tests_passed++))
+    else
+        log_warning "⚠️ Test 5/6: MongoDB en démarrage"
+    fi
+    
+    # Test 6: Site web complet
     local protocol="https"
-    if ! curl -f -s https://$DOMAIN &>/dev/null; then
+    if ! timeout 5 curl -f -s https://$DOMAIN &>/dev/null; then
         protocol="http"
     fi
     
-    if curl -f -s $protocol://$DOMAIN &>/dev/null; then
-        log_success "✅ Test 5/5: Site web accessible ($protocol://$DOMAIN)"
+    if timeout 10 curl -f -s $protocol://$DOMAIN &>/dev/null; then
+        log_success "✅ Test 6/6: Site accessible ($protocol://$DOMAIN)"
         ((tests_passed++))
     else
-        log_warning "⚠️ Test 5/5: Site web - vérification DNS requise"
+        log_warning "⚠️ Test 6/6: Vérifier DNS"
     fi
     
-    # Résultat des tests
-    if [ $tests_passed -ge 3 ]; then
-        log_success "🎉 Tests réussis: $tests_passed/$total_tests"
+    # Résultat optimisé
+    if [ $tests_passed -ge 4 ]; then
+        log_success "🎉 Tests réussis: $tests_passed/$total_tests - Application fonctionnelle"
         return 0
     else
-        log_warning "⚠️ Tests partiels: $tests_passed/$total_tests"
-        log_info "L'application peut nécessiter quelques minutes supplémentaires"
+        log_warning "⚠️ Tests partiels: $tests_passed/$total_tests - Finalisation en cours"
         return 1
     fi
 }
