@@ -584,6 +584,12 @@ async def websocket_endpoint(websocket: WebSocket, meeting_id: str):
     except WebSocketDisconnect:
         manager.disconnect(websocket, meeting_id)
 
+# Health check endpoint for Docker
+@api_router.get("/")
+async def health_check():
+    """Health check endpoint for Docker containers"""
+    return {"status": "healthy", "service": "vote-secret-backend"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
