@@ -534,6 +534,13 @@ function App() {
       if (participant) {
         checkParticipantStatus();
         loadPolls();
+        // Set up polling for real-time updates every 3 seconds
+        const interval = setInterval(() => {
+          checkParticipantStatus();
+          loadPolls();
+        }, 3000);
+        
+        return () => clearInterval(interval);
       }
     }, [participant]);
 
