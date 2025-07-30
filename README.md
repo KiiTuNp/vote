@@ -3,7 +3,7 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-production--ready-green.svg)
 
-## 🚀 Installation Ultra-Simple
+## 🚀 Installation Ultra-Simple pour Ubuntu 22.04
 
 ### Une seule commande pour tout installer :
 
