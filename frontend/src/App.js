@@ -287,9 +287,37 @@ function App() {
       setNewPollOptions(updated);
     };
 
-    const removePollOption = (index) => {
-      if (newPollOptions.length > 2) {
-        setNewPollOptions(newPollOptions.filter((_, i) => i !== index));
+    const downloadReport = async () => {
+      if (!meeting?.id) return;
+      
+      try {
+        const confirmed = window.confirm(
+          "⚠️ ATTENTION: Cette action va télécharger le rapport PDF et supprimer définitivement toutes les données de la réunion.\n\nCette action est IRRÉVERSIBLE.\n\nÊtes-vous sûr de vouloir continuer ?"
+        );
+        
+        if (!confirmed) return;
+        
+        // Create download link
+        const downloadUrl = `${API}/meetings/${meeting.id}/report`;
+        
+        // Create temporary link to trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `Rapport_${meeting.title}_${meeting.meeting_code}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message and redirect
+        setTimeout(() => {
+          alert("✅ Rapport téléchargé avec succès!\n\n📝 Toutes les données de la réunion ont été supprimées.\n\n🏠 Retour à l'accueil...");
+          setCurrentView("home");
+          setMeeting(null);
+        }, 2000);
+        
+      } catch (error) {
+        console.error("Error downloading report:", error);
+        alert("❌ Erreur lors du téléchargement du rapport: " + (error.response?.data?.detail || "Erreur inconnue"));
       }
     };
 
