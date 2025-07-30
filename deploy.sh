@@ -177,46 +177,70 @@ setup_project() {
     
     # Création du Dockerfile pour le frontend (évite les problèmes npm)
     cat > frontend/Dockerfile << 'EOF'
-# Build stage
+# Build stage - utilise Node.js 18 LTS pour la compatibilité
 FROM node:18-alpine as builder
 
+# Variables d'environnement pour le build
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV NODE_OPTIONS=--max_old_space_size=4096
+ENV DISABLE_HOT_RELOAD=true
+
+# Créer le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers package
-COPY package*.json ./
-COPY yarn.lock* ./
+# Installer les dépendances système nécessaires pour certains packages npm
+RUN apk add --no-cache python3 make g++ git
 
-# Installer les dépendances avec gestion d'erreurs
-RUN npm install --legacy-peer-deps || yarn install
+# Copier les fichiers de configuration npm
+COPY package.json yarn.lock* package-lock.json* ./
+
+# Nettoyer le cache npm et installer les dépendances
+RUN npm cache clean --force || true
+RUN rm -rf node_modules || true
+
+# Installer les dépendances avec --legacy-peer-deps pour résoudre les conflits
+RUN npm install --legacy-peer-deps --production=false --no-audit --no-fund
 
 # Copier le code source
 COPY . .
 
-# Variables d'environnement pour le build
+# Variables d'environnement pour l'application
 ENV REACT_APP_BACKEND_URL=https://vote.super-csn.ca
-ENV GENERATE_SOURCEMAP=false
-ENV NODE_OPTIONS=--max_old_space_size=4096
 
-# Build de production
+# Build de production avec craco
 RUN npm run build
 
-# Production stage
+# Vérifier que le build a réussi
+RUN test -d build && test -f build/index.html || (echo "Build failed - missing build directory or index.html" && exit 1)
+
+# Production stage - utilise nginx:alpine
 FROM nginx:alpine
 
 # Copier les fichiers buildés
 COPY --from=builder /app/build /usr/share/nginx/html
 
-# Configuration Nginx pour React Router
+# Configuration Nginx pour React Router (SPA)
 RUN echo 'server { \
     listen 80; \
+    server_name localhost; \
     location / { \
         root /usr/share/nginx/html; \
         index index.html index.htm; \
         try_files $uri $uri/ /index.html; \
     } \
+    location /static/ { \
+        root /usr/share/nginx/html; \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+    } \
 }' > /etc/nginx/conf.d/default.conf
 
+# Exposer le port 80
 EXPOSE 80
+
+# Commande par défaut
+CMD ["nginx", "-g", "daemon off;"]
 EOF
 
     # Dockerfile backend optimisé
