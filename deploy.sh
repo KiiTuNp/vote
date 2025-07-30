@@ -85,12 +85,47 @@ apt install -y python3 python3-pip python3-venv python3-dev
 python3 --version
 pip3 --version
 
-# 6. Installation de MongoDB
+# 6. Installation de MongoDB (avec fix pour Ubuntu 22.04+)
 log_info "🍃 Installation de MongoDB..."
-wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-apt update
-apt install -y mongodb-org
+
+# Détecter la version d'Ubuntu
+UBUNTU_VERSION=$(lsb_release -rs)
+UBUNTU_CODENAME=$(lsb_release -cs)
+
+log_info "Détection: Ubuntu $UBUNTU_VERSION ($UBUNTU_CODENAME)"
+
+if (( $(echo "$UBUNTU_VERSION >= 22.04" | bc -l) )); then
+    log_warning "Ubuntu 22.04+ détecté - Installation de libssl1.1 requise"
+    
+    # Installation de libssl1.1 pour Ubuntu 22.04+
+    cd /tmp
+    wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
+    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
+    
+    # Alternative: utiliser le repo Ubuntu 20.04 pour MongoDB
+    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+    apt update
+    
+    # Installation de MongoDB 6.0 (compatible avec libssl3)
+    apt install -y mongodb-org=6.0.3 mongodb-org-database=6.0.3 mongodb-org-server=6.0.3 mongodb-org-mongos=6.0.3 mongodb-org-shell=6.0.3 mongodb-org-tools=6.0.3
+    
+    # Empêcher les mises à jour automatiques
+    echo "mongodb-org hold" | dpkg --set-selections
+    echo "mongodb-org-database hold" | dpkg --set-selections
+    echo "mongodb-org-server hold" | dpkg --set-selections
+    echo "mongodb-org-mongos hold" | dpkg --set-selections
+    echo "mongodb-org-shell hold" | dpkg --set-selections
+    echo "mongodb-org-tools hold" | dpkg --set-selections
+    
+else
+    log_info "Ubuntu < 22.04 - Installation MongoDB classique"
+    # Installation classique pour Ubuntu 20.04 et antérieures
+    wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | apt-key add -
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $UBUNTU_CODENAME/mongodb-org/5.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+    apt update
+    apt install -y mongodb-org
+fi
 
 # Démarrer et activer MongoDB
 systemctl start mongod
