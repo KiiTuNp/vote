@@ -98,26 +98,165 @@ log_info "Détection: Ubuntu $UBUNTU_VERSION ($UBUNTU_CODENAME)"
 if (( $(echo "$UBUNTU_VERSION >= 22.04" | bc -l) )); then
     log_warning "Ubuntu 22.04+ détecté - Installation de libssl1.1 requise"
     
-    # Installation de libssl1.1 pour Ubuntu 22.04+
+    # Méthode 1: Essayer plusieurs sources pour libssl1.1
     cd /tmp
-    wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
-    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     
-    # Alternative: utiliser le repo Ubuntu 20.04 pour MongoDB
-    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-    apt update
+    # Liste des URLs de fallback pour libssl1.1
+    LIBSSL_URLS=(
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb"
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.17_amd64.deb"
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb"
+        "http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"
+        "https://launchpad.net/ubuntu/+archive/primary/+sourcefiles/openssl/1.1.1f-1ubuntu2.20/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"
+    )
     
-    # Installation de MongoDB 6.0 (compatible avec libssl3)
-    apt install -y mongodb-org=6.0.3 mongodb-org-database=6.0.3 mongodb-org-server=6.0.3 mongodb-org-mongos=6.0.3 mongodb-org-shell=6.0.3 mongodb-org-tools=6.0.3
+    LIBSSL_INSTALLED=false
     
-    # Empêcher les mises à jour automatiques
-    echo "mongodb-org hold" | dpkg --set-selections
-    echo "mongodb-org-database hold" | dpkg --set-selections
-    echo "mongodb-org-server hold" | dpkg --set-selections
-    echo "mongodb-org-mongos hold" | dpkg --set-selections
-    echo "mongodb-org-shell hold" | dpkg --set-selections
-    echo "mongodb-org-tools hold" | dpkg --set-selections
+    for url in "${LIBSSL_URLS[@]}"; do
+        log_info "Tentative de téléchargement: $(basename "$url")"
+        if wget -q --timeout=10 "$url"; then
+            filename=$(basename "$url")
+            if dpkg -i "$filename" 2>/dev/null; then
+                log_success "✅ libssl1.1 installé depuis: $url"
+                LIBSSL_INSTALLED=true
+                break
+            else
+                log_warning "Échec d'installation de $filename"
+                rm -f "$filename"
+            fi
+        else
+            log_warning "Téléchargement échoué: $url"
+        fi
+    done
+    
+    # Méthode 2: Si toutes les tentatives échouent, utiliser les repos Ubuntu 20.04
+    if [ "$LIBSSL_INSTALLED" = false ]; then
+        log_warning "Toutes les tentatives directes ont échoué. Utilisation des repos Ubuntu 20.04..."
+        
+        # Ajouter temporairement le repo Ubuntu 20.04
+        echo "deb http://archive.ubuntu.com/ubuntu focal main" >> /etc/apt/sources.list.d/focal-temp.list
+        apt update
+        
+        if apt install -y libssl1.1; then
+            log_success "✅ libssl1.1 installé depuis les repos Ubuntu 20.04"
+            LIBSSL_INSTALLED=true
+        else
+            log_error "❌ Impossible d'installer libssl1.1 depuis les repos"
+        fi
+        
+        # Nettoyer le repo temporaire
+        rm -f /etc/apt/sources.list.d/focal-temp.list
+        apt update
+    fi
+    
+    # Méthode 3: Si toujours pas installé, installer MongoDB directement depuis le binaire
+    if [ "$LIBSSL_INSTALLED" = false ]; then
+        log_error "❌ Impossible d'installer libssl1.1. Basculement vers MongoDB Community Server (binaire)"
+        
+        # Télécharger et installer MongoDB Community Server directement
+        wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-6.0.3.tgz
+        tar -zxvf mongodb-linux-x86_64-ubuntu2004-6.0.3.tgz
+        
+        # Créer les répertoires MongoDB
+        mkdir -p /usr/local/mongodb
+        cp -R mongodb-linux-x86_64-ubuntu2004-6.0.3/* /usr/local/mongodb/
+        
+        # Créer les liens symboliques
+        ln -sf /usr/local/mongodb/bin/* /usr/local/bin/
+        
+        # Créer l'utilisateur MongoDB
+        useradd mongodb || true
+        
+        # Créer les répertoires de données
+        mkdir -p /var/lib/mongodb
+        mkdir -p /var/log/mongodb
+        chown mongodb:mongodb /var/lib/mongodb
+        chown mongodb:mongodb /var/log/mongodb
+        
+        # Créer le fichier de configuration
+        cat > /etc/mongod.conf << 'EOF'
+storage:
+  dbPath: /var/lib/mongodb
+  journal:
+    enabled: true
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+net:
+  port: 27017
+  bindIp: 127.0.0.1
+
+processManagement:
+  fork: true
+  pidFilePath: /var/run/mongodb/mongod.pid
+  timeZoneInfo: /usr/share/zoneinfo
+EOF
+
+        # Créer le service systemd
+        cat > /etc/systemd/system/mongod.service << 'EOF'
+[Unit]
+Description=MongoDB Database Server
+Documentation=https://docs.mongodb.org/manual
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=mongodb
+Group=mongodb
+EnvironmentFile=-/etc/default/mongod
+ExecStart=/usr/local/bin/mongod --config /etc/mongod.conf
+PIDFile=/var/run/mongodb/mongod.pid
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+LimitMEMLOCK=infinity
+TasksMax=infinity
+TasksAccounting=false
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        # Créer le répertoire PID
+        mkdir -p /var/run/mongodb
+        chown mongodb:mongodb /var/run/mongodb
+        
+        systemctl daemon-reload
+        log_success "✅ MongoDB installé depuis les binaires"
+        
+    else
+        # Installation MongoDB normale avec libssl1.1 disponible
+        log_info "Installation de MongoDB 6.0 avec libssl1.1..."
+        
+        # Utiliser le repo focal (Ubuntu 20.04) pour MongoDB car il est compatible avec libssl1.1
+        wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+        apt update
+        
+        # Installation avec versions spécifiques
+        apt install -y \
+            mongodb-org=6.0.3 \
+            mongodb-org-database=6.0.3 \
+            mongodb-org-server=6.0.3 \
+            mongodb-org-mongos=6.0.3 \
+            mongodb-org-shell=6.0.3 \
+            mongodb-org-tools=6.0.3
+        
+        # Verrouiller les versions
+        echo "mongodb-org hold" | dpkg --set-selections
+        echo "mongodb-org-database hold" | dpkg --set-selections
+        echo "mongodb-org-server hold" | dpkg --set-selections
+        echo "mongodb-org-mongos hold" | dpkg --set-selections
+        echo "mongodb-org-shell hold" | dpkg --set-selections
+        echo "mongodb-org-tools hold" | dpkg --set-selections
+    fi
     
 else
     log_info "Ubuntu < 22.04 - Installation MongoDB classique"
