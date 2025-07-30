@@ -165,7 +165,11 @@ REACT_APP_BACKEND_URL=https://$DOMAIN
 GENERATE_SOURCEMAP=false
 EOF
 
-npm install
+# Corriger le problème de date-fns
+sed -i 's/"date-fns": "^4.1.0"/"date-fns": "^3.6.0"/' package.json
+
+# Installation avec --legacy-peer-deps pour éviter les conflits
+npm install --legacy-peer-deps
 npm run build
 cd ..
 
