@@ -61,12 +61,14 @@ function App() {
     const [organizerName, setOrganizerName] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const handleCreate = async () => {
+    const handleCreate = async (e) => {
+      e.preventDefault();
       console.log("🔍 handleCreate called with:", { title, organizerName });
       console.log("🔍 Backend URL:", BACKEND_URL, "API:", API);
       
       if (!title || !organizerName) {
         console.log("❌ Missing title or organizer name");
+        alert("Veuillez remplir tous les champs");
         return;
       }
       
@@ -98,35 +100,46 @@ function App() {
               Configurez votre session de vote
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Titre de la réunion</label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="ex: Assemblée générale 2025"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Votre nom</label>
-              <Input
-                value={organizerName}
-                onChange={(e) => setOrganizerName(e.target.value)}
-                placeholder="ex: Jean Dupont"
-              />
-            </div>
-            <div className="flex space-x-2">
-              <Button onClick={() => setCurrentView("home")} variant="outline" className="flex-1">
-                Retour
-              </Button>
-              <Button 
-                onClick={handleCreate} 
-                disabled={!title || !organizerName || loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                {loading ? "Création..." : "Créer"}
-              </Button>
-            </div>
+          <CardContent>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Titre de la réunion</label>
+                <Input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="ex: Assemblée générale 2025"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Votre nom</label>
+                <Input
+                  type="text"
+                  value={organizerName}
+                  onChange={(e) => setOrganizerName(e.target.value)}
+                  placeholder="ex: Jean Dupont"
+                  required
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  type="button"
+                  onClick={() => setCurrentView("home")} 
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  Retour
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={!title || !organizerName || loading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? "Création..." : "Créer"}
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
