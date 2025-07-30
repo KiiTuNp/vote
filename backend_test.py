@@ -333,6 +333,82 @@ class VoteSecretAPITester:
         )
         return success
 
+    def test_generate_report_and_cleanup(self):
+        """Test PDF report generation and data cleanup"""
+        if not self.meeting_id:
+            print("❌ Skipping - No meeting ID available")
+            return False
+        
+        print(f"\n🔍 Testing PDF Report Generation and Data Cleanup...")
+        print(f"   Meeting ID: {self.meeting_id}")
+        
+        # Test PDF report generation (this should return a file)
+        url = f"{self.api_url}/meetings/{self.meeting_id}/report"
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url)
+            success = response.status_code == 200
+            
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                print(f"   Content-Type: {response.headers.get('content-type', 'N/A')}")
+                print(f"   Content-Length: {len(response.content)} bytes")
+                
+                # Verify it's a PDF
+                if response.headers.get('content-type') == 'application/pdf':
+                    print("   ✅ PDF file generated successfully")
+                else:
+                    print("   ⚠️  Warning: Content type is not application/pdf")
+                
+                # Now test that all data has been deleted
+                print("\n   🧹 Testing Data Cleanup...")
+                
+                # Test 1: Meeting should be deleted (404)
+                meeting_response = requests.get(f"{self.api_url}/meetings/{self.meeting_code}")
+                if meeting_response.status_code == 404:
+                    print("   ✅ Meeting deleted successfully")
+                else:
+                    print(f"   ❌ Meeting still exists (Status: {meeting_response.status_code})")
+                
+                # Test 2: Organizer view should return 404
+                organizer_response = requests.get(f"{self.api_url}/meetings/{self.meeting_id}/organizer")
+                if organizer_response.status_code == 404:
+                    print("   ✅ Organizer view returns 404 (meeting deleted)")
+                else:
+                    print(f"   ❌ Organizer view still accessible (Status: {organizer_response.status_code})")
+                
+                # Test 3: Participant status should return 404
+                if self.participant_id:
+                    participant_response = requests.get(f"{self.api_url}/participants/{self.participant_id}/status")
+                    if participant_response.status_code == 404:
+                        print("   ✅ Participant data deleted successfully")
+                    else:
+                        print(f"   ❌ Participant data still exists (Status: {participant_response.status_code})")
+                
+                # Test 4: Poll results should return 404
+                if self.poll_id:
+                    poll_response = requests.get(f"{self.api_url}/polls/{self.poll_id}/results")
+                    if poll_response.status_code == 404:
+                        print("   ✅ Poll data deleted successfully")
+                    else:
+                        print(f"   ❌ Poll data still exists (Status: {poll_response.status_code})")
+                
+                return True
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error: {json.dumps(error_data, indent=2)}")
+                except:
+                    print(f"   Error: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+
 def main():
     print("🚀 Starting Vote Secret API Tests")
     print("=" * 50)
