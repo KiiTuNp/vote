@@ -8,7 +8,7 @@ import { Badge } from "./components/ui/badge";
 import { Progress } from "./components/ui/progress";
 import { Separator } from "./components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
-import { CheckCircle, Clock, Users, Vote, AlertCircle, Play, Square } from "lucide-react";
+import { CheckCircle, Clock, Users, Vote, AlertCircle, Play, Square, Download, FileText } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
