@@ -603,7 +603,7 @@ setup_ssl() {
     if confirm "Installer les certificats SSL automatiquement?" "y"; then
         log_info "Génération des certificats SSL..."
         
-        if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email admin@super-csn.ca --redirect &>>"$LOG_FILE"; then
+        if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email simon@super-csn.ca --redirect &>>"$LOG_FILE"; then
             log_success "✅ SSL configuré avec succès"
             
             # Auto-renouvellement optimisé
