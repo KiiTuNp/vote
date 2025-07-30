@@ -8,16 +8,16 @@
 
 set -e
 
-# Configuration avec versions 2025
-DOMAIN="vote.super-csn.ca"
+# Configuration par défaut - peut être modifiée
+DEFAULT_DOMAIN="vote.example.com"
 REPO_URL="https://github.com/KiiTuNp/vote.git"
 APP_DIR="/var/www/vote-secret"
 LOG_FILE="/tmp/vote-secret-deploy.log"
 
-# Versions les plus stables (Juillet 2025)
+# Versions les plus stables pour production (2025)
 DOCKER_COMPOSE_VERSION="v2.39.1"
-MONGODB_VERSION="8.0.12"
-NODE_VERSION="22"
+MONGODB_VERSION="7.0"  # Version stable production
+NODE_VERSION="22"      # LTS Active
 
 # Couleurs
 RED='\033[0;31m'
