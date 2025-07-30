@@ -8,8 +8,8 @@
 
 set -e
 
-# Configuration par défaut - peut être modifiée
-DEFAULT_DOMAIN="vote.example.com"
+# Configuration par défaut - sera configurée automatiquement
+DEFAULT_DOMAIN="vote.super-csn.ca"
 REPO_URL="https://github.com/KiiTuNp/vote.git"
 APP_DIR="/var/www/vote-secret"
 LOG_FILE="/tmp/vote-secret-deploy.log"
