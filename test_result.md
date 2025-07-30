@@ -250,8 +250,6 @@
 
 ## test_plan:
   current_focus:
-    - "Docker Frontend Build"
-    - "Frontend Environment Configuration"
     - "Deploy Script Domain Configuration"
     - "Docker Compose Configuration"
   stuck_tasks: []
