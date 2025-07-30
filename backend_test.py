@@ -449,6 +449,11 @@ def main():
     test_results.append(("Vote on Inactive Poll (should fail)", tester.test_vote_on_inactive_poll()))
     test_results.append(("Close Poll", tester.test_close_poll()))
     
+    # 5. PDF Report and Data Cleanup Tests
+    print("\n📄 PDF REPORT & DATA CLEANUP TESTS")
+    print("-" * 35)
+    test_results.append(("Generate Report & Cleanup", tester.test_generate_report_and_cleanup()))
+    
     # Print final results
     print("\n" + "=" * 50)
     print("📊 FINAL TEST RESULTS")
