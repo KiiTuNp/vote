@@ -54,13 +54,51 @@ if (( $(echo "$UBUNTU_VERSION >= 22.04" | bc -l) )); then
     
     cd /tmp
     
-    # Téléchargement et installation de libssl1.1
-    if [ ! -f "libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb" ]; then
-        wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
+    # Liste des URLs de fallback pour libssl1.1
+    LIBSSL_URLS=(
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb"
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.17_amd64.deb"
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb"
+        "http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"
+    )
+    
+    LIBSSL_INSTALLED=false
+    
+    for url in "${LIBSSL_URLS[@]}"; do
+        log_info "Tentative: $(basename "$url")"
+        if wget -q --timeout=10 "$url"; then
+            filename=$(basename "$url")
+            if dpkg -i "$filename" 2>/dev/null; then
+                log_success "✅ libssl1.1 installé"
+                LIBSSL_INSTALLED=true
+                break
+            else
+                rm -f "$filename"
+            fi
+        fi
+    done
+    
+    # Fallback: utiliser les repos Ubuntu 20.04
+    if [ "$LIBSSL_INSTALLED" = false ]; then
+        log_warning "Tentative via repos Ubuntu 20.04..."
+        echo "deb http://archive.ubuntu.com/ubuntu focal main" >> /etc/apt/sources.list.d/focal-temp.list
+        apt update
+        
+        if apt install -y libssl1.1; then
+            log_success "✅ libssl1.1 installé depuis focal"
+            LIBSSL_INSTALLED=true
+        fi
+        
+        rm -f /etc/apt/sources.list.d/focal-temp.list
+        apt update
     fi
     
-    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
-    log_success "✅ libssl1.1 installé"
+    if [ "$LIBSSL_INSTALLED" = false ]; then
+        log_error "❌ Impossible d'installer libssl1.1"
+        log_error "🐳 Recommandation: Utiliser le déploiement Docker à la place"
+        exit 1
+    fi
     
     # 4. Installation de MongoDB 6.0 (compatible)
     log_info "🍃 Installation de MongoDB 6.0..."
