@@ -848,6 +848,7 @@ main() {
     
     # Confirmation avant démarrage
     echo -e "${YELLOW}Ce script va:${NC}"
+    echo "  • Configurer le domaine: $DOMAIN"
     echo "  • Installer Docker et les dépendances"
     echo "  • Télécharger et configurer Vote Secret"
     echo "  • Configurer Nginx et le firewall"
@@ -862,6 +863,7 @@ main() {
     
     # Exécution séquentielle
     check_system
+    configure_domain
     cleanup_previous
     install_system
     install_docker
