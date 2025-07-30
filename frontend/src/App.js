@@ -209,6 +209,12 @@ function App() {
     useEffect(() => {
       if (meeting) {
         loadOrganizerData();
+        // Set up polling for real-time updates every 3 seconds
+        const interval = setInterval(() => {
+          loadOrganizerData();
+        }, 3000);
+        
+        return () => clearInterval(interval);
       }
     }, [meeting]);
 
