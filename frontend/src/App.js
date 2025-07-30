@@ -60,19 +60,28 @@ function App() {
     const [loading, setLoading] = useState(false);
 
     const handleCreate = async () => {
-      if (!title || !organizerName) return;
+      console.log("🔍 handleCreate called with:", { title, organizerName });
+      console.log("🔍 Backend URL:", BACKEND_URL, "API:", API);
+      
+      if (!title || !organizerName) {
+        console.log("❌ Missing title or organizer name");
+        return;
+      }
       
       setLoading(true);
       try {
+        console.log("🚀 Making API call to create meeting...");
         const response = await axios.post(`${API}/meetings`, {
           title,
           organizer_name: organizerName
         });
+        console.log("✅ Meeting created successfully:", response.data);
         setMeeting(response.data);
         setCurrentView("organizer");
         connectWebSocket(response.data.id);
       } catch (error) {
-        console.error("Error creating meeting:", error);
+        console.error("❌ Error creating meeting:", error);
+        alert("Erreur lors de la création de la réunion: " + (error.response?.data?.detail || error.message));
       } finally {
         setLoading(false);
       }
