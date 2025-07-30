@@ -287,6 +287,12 @@ function App() {
       setNewPollOptions(updated);
     };
 
+    const removePollOption = (index) => {
+      if (newPollOptions.length > 2) {
+        setNewPollOptions(newPollOptions.filter((_, i) => i !== index));
+      }
+    };
+
     const downloadReport = async () => {
       if (!meeting?.id) return;
       
