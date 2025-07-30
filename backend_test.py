@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 class VoteSecretAPITester:
-    def __init__(self, base_url="https://dac23748-f23d-42e5-8d4d-0b6bf9f295c1.preview.emergentagent.com"):
+    def __init__(self, base_url="https://1e442c2f-de01-4622-93eb-720aff0317aa.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
