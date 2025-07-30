@@ -834,6 +834,9 @@ show_summary() {
 # ========================================================================
 
 main() {
+    # Définir le domaine par défaut avant l'affichage
+    DOMAIN="$DEFAULT_DOMAIN"
+    
     echo ""
     echo "========================================"
     echo -e "${PURPLE}🚀 Vote Secret - Déploiement Docker${NC}"
