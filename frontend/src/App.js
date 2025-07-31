@@ -685,7 +685,7 @@ function App() {
               <div className="space-y-6">
                 {polls.map((poll) => (
                   <Card key={poll.id} className="glass-card border-0 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-xl">
+                    <CardHeader className="bg-gradient-to-r from-rose-500 via-pink-500 to-violet-500 text-white rounded-t-xl">
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <CardTitle className="text-lg">{poll.question}</CardTitle>
                         <div className="flex items-center gap-2">
@@ -701,7 +701,7 @@ function App() {
                           )}
                           {poll.status === "active" && (
                             <>
-                              <Badge className="status-approved">
+                              <Badge className="bg-white bg-opacity-20 text-white border-white">
                                 <Clock className="w-3 h-3 mr-1" />
                                 En cours
                               </Badge>
@@ -709,7 +709,7 @@ function App() {
                                 size="sm" 
                                 variant="outline"
                                 onClick={() => closePoll(poll.id)}
-                                className="border-white text-white hover:bg-white hover:text-purple-600"
+                                className="border-white text-white hover:bg-white hover:text-rose-600 transition-colors"
                               >
                                 <Square className="w-4 h-4 mr-1" />
                                 Fermer
@@ -717,7 +717,7 @@ function App() {
                             </>
                           )}
                           {poll.status === "closed" && (
-                            <Badge variant="secondary">Fermé</Badge>
+                            <Badge className="bg-white bg-opacity-20 text-white">Fermé</Badge>
                           )}
                         </div>
                       </div>
@@ -742,8 +742,8 @@ function App() {
                         })}
                       </div>
                       {poll.timer_duration && (
-                        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
-                          <p className="text-sm text-blue-700 flex items-center gap-2">
+                        <div className="mt-4 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg border border-rose-200">
+                          <p className="text-sm text-rose-700 flex items-center gap-2">
                             <Timer className="w-4 h-4" />
                             Durée du minuteur: {poll.timer_duration} secondes
                           </p>
@@ -755,7 +755,9 @@ function App() {
                 {polls.length === 0 && (
                   <Card className="glass-card border-0 shadow-lg">
                     <CardContent className="text-center py-12">
-                      <Vote className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                      <div className="w-16 h-16 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Vote className="w-8 h-8 text-white" />
+                      </div>
                       <p className="text-slate-500 text-lg">Aucun sondage créé pour le moment</p>
                       <p className="text-slate-400 text-sm mt-2">Créez votre premier sondage dans l'onglet "Créer"</p>
                     </CardContent>
