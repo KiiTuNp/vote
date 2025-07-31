@@ -152,15 +152,23 @@ function App() {
     const [meetingCode, setMeetingCode] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const handleJoin = async () => {
-      if (!name || !meetingCode) return;
+    const handleJoin = async (e) => {
+      e.preventDefault();
+      console.log("🔍 handleJoin called with:", { name, meetingCode });
+      
+      if (!name || !meetingCode) {
+        alert("Veuillez remplir tous les champs");
+        return;
+      }
       
       setLoading(true);
       try {
+        console.log("🚀 Making API call to join meeting...");
         const response = await axios.post(`${API}/participants/join`, {
           name,
           meeting_code: meetingCode.toUpperCase()
         });
+        console.log("✅ Successfully joined meeting:", response.data);
         setParticipant(response.data);
         
         // Get meeting details
@@ -170,7 +178,7 @@ function App() {
         setCurrentView("participant");
         connectWebSocket(meetingResponse.data.id);
       } catch (error) {
-        console.error("Error joining meeting:", error);
+        console.error("❌ Error joining meeting:", error);
         alert("Erreur: " + (error.response?.data?.detail || "Impossible de rejoindre la réunion"));
       } finally {
         setLoading(false);
@@ -186,36 +194,47 @@ function App() {
               Entrez vos informations pour participer
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Votre nom</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="ex: Marie Martin"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Code de réunion</label>
-              <Input
-                value={meetingCode}
-                onChange={(e) => setMeetingCode(e.target.value.toUpperCase())}
-                placeholder="ex: ABC12345"
-                className="font-mono"
-              />
-            </div>
-            <div className="flex space-x-2">
-              <Button onClick={() => setCurrentView("home")} variant="outline" className="flex-1">
-                Retour
-              </Button>
-              <Button 
-                onClick={handleJoin} 
-                disabled={!name || !meetingCode || loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                {loading ? "Connexion..." : "Rejoindre"}
-              </Button>
-            </div>
+          <CardContent>
+            <form onSubmit={handleJoin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Votre nom</label>
+                <Input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="ex: Marie Martin"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Code de réunion</label>
+                <Input
+                  type="text"
+                  value={meetingCode}
+                  onChange={(e) => setMeetingCode(e.target.value.toUpperCase())}
+                  placeholder="ex: ABC12345"
+                  className="font-mono"
+                  required
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  type="button"
+                  onClick={() => setCurrentView("home")} 
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  Retour
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={!name || !meetingCode || loading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? "Connexion..." : "Rejoindre"}  
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
