@@ -611,7 +611,7 @@ function App() {
 
             <TabsContent value="participants">
               <Card className="glass-card border-0 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-t-xl">
+                <CardHeader className="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white rounded-t-xl">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5" />
                     Gestion des Participants
@@ -620,10 +620,10 @@ function App() {
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     {participants.map((participant) => (
-                      <div key={participant.id} className="glass-card p-4 border border-slate-200">
+                      <div key={participant.id} className="glass-card p-4 border border-purple-200 hover:border-purple-300 transition-colors">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                               {participant.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -648,6 +648,7 @@ function App() {
                                   size="sm" 
                                   variant="outline" 
                                   onClick={() => approveParticipant(participant.id, false)}
+                                  className="border-purple-300 hover:bg-purple-50"
                                 >
                                   Rejeter
                                 </Button>
@@ -668,9 +669,11 @@ function App() {
                     ))}
                     {participants.length === 0 && (
                       <div className="text-center py-12">
-                        <UserPlus className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                        <div className="w-16 h-16 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <UserPlus className="w-8 h-8 text-white" />
+                        </div>
                         <p className="text-slate-500 text-lg">Aucun participant n'a encore rejoint la réunion</p>
-                        <p className="text-slate-400 text-sm mt-2">Partagez le code : <span className="font-mono font-bold">{meeting?.meeting_code}</span></p>
+                        <p className="text-slate-400 text-sm mt-2">Partagez le code : <span className="font-mono font-bold text-purple-600">{meeting?.meeting_code}</span></p>
                       </div>
                     )}
                   </div>
