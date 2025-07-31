@@ -643,7 +643,8 @@ function App() {
       if (participant) {
         checkParticipantStatus();
         loadPolls();
-        // Set up polling for real-time updates every 3 seconds
+        
+        // Set up polling for participant status and new polls (but NOT results)
         const interval = setInterval(() => {
           checkParticipantStatus();
           loadPolls();
@@ -666,7 +667,21 @@ function App() {
       if (!meeting) return;
       try {
         const response = await axios.get(`${API}/meetings/${meeting.id}/polls`);
-        setPolls(response.data);
+        // Pour les participants, on ne met à jour les résultats QUE pour les sondages où ils ont déjà voté
+        const pollsData = response.data.map(poll => {
+          if (!votedPolls.has(poll.id)) {
+            // Si le participant n'a pas encore voté, on efface les compteurs de votes
+            return {
+              ...poll,
+              options: poll.options.map(option => ({
+                ...option,
+                votes: 0  // Masquer les vrais résultats
+              }))
+            };
+          }
+          return poll; // Si déjà voté, garder les vrais résultats
+        });
+        setPolls(pollsData);
       } catch (error) {
         console.error("Error loading polls:", error);
       }
@@ -679,11 +694,24 @@ function App() {
           option_id: optionId
         });
         
+        // Marquer ce sondage comme voté
         setVotedPolls(prev => new Set([...prev, pollId]));
-        loadPolls(); // Refresh to see results
+        
+        // MAINTENANT charger les vrais résultats pour ce sondage
+        loadPollResults(pollId);
       } catch (error) {
         console.error("Error submitting vote:", error);
         alert("Erreur lors du vote: " + (error.response?.data?.detail || "Erreur inconnue"));
+      }
+    };
+
+    const loadPollResults = async (pollId) => {
+      try {
+        const response = await axios.get(`${API}/meetings/${meeting.id}/polls`);
+        const updatedPolls = response.data;
+        setPolls(updatedPolls);
+      } catch (error) {
+        console.error("Error loading poll results:", error);
       }
     };
 
@@ -750,7 +778,16 @@ function App() {
                     <CardTitle className="text-lg">{poll.question}</CardTitle>
                     {!votedPolls.has(poll.id) && (
                       <CardDescription>
-                        Sélectionnez votre réponse pour voir les résultats
+                        <span className="text-blue-600 font-medium">
+                          🔒 Votez pour voir les résultats
+                        </span>
+                      </CardDescription>
+                    )}
+                    {votedPolls.has(poll.id) && (
+                      <CardDescription>
+                        <span className="text-green-600 font-medium">
+                          ✅ Vous avez voté - Résultats en temps réel
+                        </span>
                       </CardDescription>
                     )}
                   </CardHeader>
@@ -767,6 +804,11 @@ function App() {
                             {option.text}
                           </Button>
                         ))}
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-700">
+                            <span className="font-semibold">🔒 Vote secret:</span> Les résultats ne s'affichent qu'après avoir voté
+                          </p>
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -786,9 +828,11 @@ function App() {
                             </div>
                           );
                         })}
-                        <p className="text-sm text-green-600 mt-4">
-                          ✓ Votre vote a été enregistré
-                        </p>
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-700">
+                            <span className="font-semibold">✅ Vote enregistré!</span> Les résultats se mettent à jour automatiquement
+                          </p>
+                        </div>
                       </div>
                     )}
                   </CardContent>
