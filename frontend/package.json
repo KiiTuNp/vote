@@ -82,6 +82,5 @@
     "globals": "^15.16.0",
     "postcss": "^8.5.0",
     "tailwindcss": "^3.4.18"
-  },
-  "packageManager": "yarn@4.6.0+sha512.3d8e0cb43b2caab07b0ed1f24e5d20d0df4b22e1fe92e4b80b0dc0cbf3b74b64c93db2e5b5f01cb9b8e4e3e6e4af4a39b9e6f72b4d3c6e3e5d2f5b0c9c1d0b8e1f"
+  }
 }
