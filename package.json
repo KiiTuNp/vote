@@ -1,0 +1,59 @@
+{
+  "name": "vote-secret",
+  "version": "2.0.0",
+  "description": "Application moderne de vote anonyme pour assemblées",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && source venv/bin/activate && uvicorn server:app --host 0.0.0.0 --port 8001 --reload",
+    "dev:frontend": "cd frontend && yarn start",
+    "build": "cd frontend && yarn build",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && source venv/bin/activate && pytest",
+    "test:frontend": "cd frontend && yarn test --watchAll=false",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && pip install -r requirements.txt",
+    "install:frontend": "cd frontend && yarn install",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && source venv/bin/activate && flake8 . && black --check . && isort --check-only .",
+    "lint:frontend": "cd frontend && yarn lint",
+    "format": "npm run format:backend && npm run format:frontend",
+    "format:backend": "cd backend && source venv/bin/activate && black . && isort .",
+    "format:frontend": "cd frontend && yarn format",
+    "clean": "npm run clean:backend && npm run clean:frontend",
+    "clean:backend": "cd backend && find . -type d -name __pycache__ -delete && find . -name '*.pyc' -delete",
+    "clean:frontend": "cd frontend && rm -rf node_modules build && yarn cache clean"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/vote-secret.git"
+  },
+  "keywords": [
+    "voting",
+    "assembly",
+    "secret-vote",
+    "fastapi",
+    "react",
+    "mongodb",
+    "anonymous",
+    "pdf-report"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/vote-secret/issues"
+  },
+  "homepage": "https://github.com/your-username/vote-secret#readme",
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0",
+    "python": ">=3.11.0"
+  }
+}
